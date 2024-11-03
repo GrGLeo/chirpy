@@ -1,14 +1,15 @@
 package main
 
 import (
-  "fmt"
 	"net/http"
 )
 
 func main() {
   mux := http.NewServeMux()
 
-  mux.Handle("/", http.HandlerFunc(homepage))
+  mux.Handle("/", http.FileServer(http.Dir(".")))
+  mux.Handle("/assets", http.FileServer(http.Dir(".")))
+  mux.Handle("/healthz", http.HandlerFunc(healthz))
   server := &http.Server {
     Addr: ":8080",
     Handler: mux,
@@ -17,7 +18,8 @@ func main() {
   }
 }
 
-
-func homepage(w http.ResponseWriter, r *http.Request) {
-  fmt.Fprintln(w, "Welcome to the homepage!")
+func healthz (w http.ResponseWriter,r *http.Request) {
+  w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+  w.WriteHeader(200)
+  w.Write([]byte("ok"))
 }
