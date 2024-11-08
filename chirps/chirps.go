@@ -2,12 +2,12 @@ package chirps
 
 import (
 	"encoding/json"
-	log"
-	net/http"
+	"log"
+	"net/http"
 	"strings"
 )
 
-func validate_chirp(w http.ResponseWriter, r *http.Request) {
+func ValidateChirps(w http.ResponseWriter, r *http.Request) {
   type parameter struct {
     Body string `json:"body"`
   }
@@ -40,7 +40,8 @@ func validate_chirp(w http.ResponseWriter, r *http.Request) {
       w.WriteHeader(400)
       w.Write(data)
     } else {
-      respondWihJson(w, 200, params.Body)
+      msg, _ := sanitizedChirp(params.Body)
+      respondWihJson(w, 200, msg)
       }
   }
 
@@ -69,5 +70,22 @@ func respondWihJson (w http.ResponseWriter, code int, msg string) {
   
 func sanitizedChirp (msg string) (string, error) {
   profaneWord := [3]string{"kerfuffle", "sharbert", "fornax"}
-  return "", nil
+  sentence := strings.Split(msg, " ")
+  newSentence := []string{}
+  for i, word := range sentence {
+    changed := false
+    for _, profane := range profaneWord {
+      word = strings.ToLower(word)
+      if strings.Contains(word, profane) {
+        changed = true
+        word = strings.ReplaceAll(word, profane, "****")
+        newSentence = append(newSentence, word)
+      }
+    }
+    if !changed {
+      newSentence = append(newSentence, sentence[i])
+    }
+  }
+  Sentence := strings.Join(newSentence, " ")
+  return Sentence, nil
 }
