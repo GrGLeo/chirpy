@@ -135,7 +135,7 @@ func main() {
   mux.Handle("GET /api/healthz", http.HandlerFunc(healthz))
   mux.Handle("GET /admin/metrics", http.HandlerFunc(apiCfg.metrics))
   mux.Handle("POST /admin/reset", http.HandlerFunc(apiCfg.reset))
-  mux.Handle("POST /api/validate_chirp", http.HandlerFunc(chirps.ValidateChirps))
+  mux.Handle("POST /api/chirps", http.HandlerFunc(chirps.WriteChirps))
   mux.Handle("POST /api/users", http.HandlerFunc(apiCfg.CreateUser))
 
   server := &http.Server {
