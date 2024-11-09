@@ -86,6 +86,24 @@ func (cfg *apiConfig) GetChrips(w http.ResponseWriter, r *http.Request) {
   respondWithJson(w, 200, AllChirps)
 }
 
+func (cfg *apiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
+  id, err := uuid.Parse(r.PathValue("id"))
+  if err != nil {
+    http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+    return
+  }
+
+  chirp, err := cfg.dbQueries.GetChirp(r.Context(), id)
+  returnChirp := Chirp{
+        ID: chirp.ID,
+        CreatedAt: chirp.CreatedAt,
+        UpdatedAt: chirp.UpdatedAt,
+        Body: chirp.Body,
+        UserId: chirp.UserID,
+      }
+  respondWihJson(w, 200, returnChirp)
+}
+
 
 func respondWihJson (w http.ResponseWriter, code int, chirp Chirp) {
   data, err := json.Marshal(chirp)
