@@ -61,10 +61,31 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
   }
    
   respondWihJson(w, 201, returnChirp)
-
-  
-
 }  
+
+func (cfg *apiConfig) GetChrips(w http.ResponseWriter, r *http.Request) {
+  var AllChirps []Chirp
+  
+  Chirps, err := cfg.dbQueries.GetChirps(r.Context())
+  if err != nil {
+    http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+    return
+  }
+  for _, result := range Chirps {
+    AllChirps = append(
+      AllChirps,
+      Chirp{
+        ID: result.ID,
+        CreatedAt: result.CreatedAt,
+        UpdatedAt: result.UpdatedAt,
+        Body: result.Body,
+        UserId: result.UserID,
+      },
+    )
+  }
+  respondWithJson(w, 200, AllChirps)
+}
+
 
 func respondWihJson (w http.ResponseWriter, code int, chirp Chirp) {
   data, err := json.Marshal(chirp)
@@ -73,12 +94,23 @@ func respondWihJson (w http.ResponseWriter, code int, chirp Chirp) {
     w.WriteHeader(500)
     return
   }
-
   w.Header().Set("Content-Type", "application/json")
   w.WriteHeader(code)
   w.Write(data)
 }
-  
+
+func respondWithJson (w http.ResponseWriter, code int, chirps []Chirp) {
+  data, err := json.Marshal(chirps)
+  if err != nil {
+    log.Printf("Error marshaling json: %s", err)
+    w.WriteHeader(500)
+    return
+  }
+  w.Header().Set("Content-Type", "application/json")
+  w.WriteHeader(code)
+  w.Write(data)
+}
+
 func sanitizedChirp (msg string) (string, error) {
   profaneWord := [3]string{"kerfuffle", "sharbert", "fornax"}
   sentence := strings.Split(msg, " ")
