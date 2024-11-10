@@ -63,7 +63,7 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
   respondWihJson(w, 201, returnChirp)
 }  
 
-func (cfg *apiConfig) GetChrips(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
   var AllChirps []Chirp
   
   Chirps, err := cfg.dbQueries.GetChirps(r.Context())
@@ -101,7 +101,6 @@ func (cfg *apiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
         Body: chirp.Body,
         UserId: chirp.UserID,
       }
-  chirp := [1]Chirp{returnChirp}
   respondWihJson(w, 200, returnChirp)
 }
 

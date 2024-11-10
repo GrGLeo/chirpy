@@ -136,8 +136,8 @@ func main() {
   mux.Handle("POST /admin/reset", http.HandlerFunc(apiCfg.reset))
   mux.Handle("POST /api/chirps", http.HandlerFunc(apiCfg.WriteChirps))
   mux.Handle("POST /api/users", http.HandlerFunc(apiCfg.CreateUser))
-  mux.Handle("GET /api/chirps", http.HandlerFunc(apiCfg.GetChrips))
-  mux.Handle("GET /api/chirps/{id}", http.HandlerFunc(apiCfg.GetChrips))
+  mux.Handle("GET /api/chirps", http.HandlerFunc(apiCfg.GetChirps))
+  mux.Handle("GET /api/chirps/{id}", http.HandlerFunc(apiCfg.GetChirp))
 
   server := &http.Server {
     Addr: ":8080",
