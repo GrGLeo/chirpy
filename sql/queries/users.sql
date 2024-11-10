@@ -8,3 +8,8 @@ VALUES (
   $2
 )
 RETURNING id, created_at, updated_at, email;
+
+-- name: GetHashedPassword :one
+SELECT *
+FROM users
+WHERE email = $1;
