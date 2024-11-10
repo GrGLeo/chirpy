@@ -101,6 +101,7 @@ func (cfg *apiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
         Body: chirp.Body,
         UserId: chirp.UserID,
       }
+  chirp := [1]Chirp{returnChirp}
   respondWihJson(w, 200, returnChirp)
 }
 
