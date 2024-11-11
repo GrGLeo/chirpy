@@ -12,13 +12,13 @@ import (
 func (cfg *apiConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
   token, err := auth.GetBearerToken(r.Header)
   if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
+    http.Error(w, err.Error(), http.StatusUnauthorized)
     return
   }
 
   userId, err := auth.ValidateJWT(token, cfg.jwtsecret)
   if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
+    http.Error(w, err.Error(), http.StatusUnauthorized)
     return
   }
 
@@ -57,7 +57,7 @@ func (cfg *apiConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
     return
   }
   w.Header().Set("Content-Type", "application/json")
-  w.WriteHeader(http.StatusCreated)
+  w.WriteHeader(http.StatusOK)
   w.Write(data)
 }
   
