@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -35,9 +38,8 @@ func MakeJWT(userId uuid.UUID, tokenSecret string, expiredIn time.Duration) (str
     ExpiresAt: jwt.NewNumericDate(time.Add(expiredIn)),
     Subject: userId.String(),
   }
-  
   token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-  return token.SignedString(tokenSecret)
+  return token.SignedString([]byte(tokenSecret))
 }
 
 func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
@@ -46,10 +48,10 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
   }
 
   token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-    return []byte(tokenString), nil
+    return []byte(tokenSecret), nil
   })
-  
   if err != nil {
+    fmt.Println("glop")
     return uuid.Nil, err
   }
 
@@ -61,4 +63,13 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
     return userID, nil
   }
   return uuid.Nil, fmt.Errorf("invalid token")
+}
+
+func GetBearerToken(header http.Header) (string, error) {
+  authorization := header.Get("Authorization")
+  if authorization == "" {
+    return authorization, errors.New("No authorization found")
+  }
+  bearerToken := strings.Split(authorization, " ")
+  return bearerToken[1], nil
 }
