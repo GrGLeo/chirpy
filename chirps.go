@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -102,6 +103,14 @@ func (cfg *apiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
   }
 
   chirp, err := cfg.dbQueries.GetChirp(r.Context(), id)
+  if err != nil {
+    if err == sql.ErrNoRows {
+      http.Error(w, "Chirp not found", http.StatusNotFound)
+      return
+    }
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
   returnChirp := Chirp{
         ID: chirp.ID,
         CreatedAt: chirp.CreatedAt,
@@ -112,6 +121,51 @@ func (cfg *apiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
   respondWihJson(w, 200, returnChirp)
 }
 
+
+func (cfg *apiConfig) DeleteChirp(w http.ResponseWriter, r *http.Request) {
+  token, err := auth.GetBearerToken(r.Header)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusUnauthorized)
+    return
+  }
+
+  userId, err := auth.ValidateJWT(token, cfg.jwtsecret)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusUnauthorized)
+    return
+  }
+
+  chirpId, err := uuid.Parse(r.PathValue("id"))
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  deleteChirpParam := database.DeleteChirpParams{
+    UserID: userId,
+    ID: chirpId,
+  }
+  chirp, err := cfg.dbQueries.GetChirp(r.Context(), chirpId)
+  if err != nil{
+    if err == sql.ErrNoRows {
+      http.Error(w, err.Error(), http.StatusNotFound)
+      return
+    }
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if userId != chirp.UserID {
+    http.Error(w, "User is not the Chirp author", http.StatusForbidden)
+    return
+  }
+    
+  err = cfg.dbQueries.DeleteChirp(r.Context(), deleteChirpParam)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  w.WriteHeader(204)
+}
 
 func respondWihJson (w http.ResponseWriter, code int, chirp Chirp) {
   data, err := json.Marshal(chirp)

@@ -97,6 +97,7 @@ func main() {
   mux.Handle("POST /api/revoke", http.HandlerFunc(apiCfg.RevokeToken))
   mux.Handle("GET /api/chirps", http.HandlerFunc(apiCfg.GetChirps))
   mux.Handle("GET /api/chirps/{id}", http.HandlerFunc(apiCfg.GetChirp))
+  mux.Handle("DELETE /api/chirps/{id}", http.HandlerFunc(apiCfg.DeleteChirp))
 
   server := &http.Server {
     Addr: ":8080",
