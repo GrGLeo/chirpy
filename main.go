@@ -91,6 +91,7 @@ func main() {
   mux.Handle("POST /admin/reset", http.HandlerFunc(apiCfg.reset))
   mux.Handle("POST /api/chirps", http.HandlerFunc(apiCfg.WriteChirps))
   mux.Handle("POST /api/users", http.HandlerFunc(apiCfg.CreateUser))
+  mux.Handle("PUT /api/users", http.HandlerFunc(apiCfg.UpdateUser))
   mux.Handle("POST /api/login", http.HandlerFunc(apiCfg.UserLogin))
   mux.Handle("POST /api/refresh", http.HandlerFunc(apiCfg.RefreshToken))
   mux.Handle("POST /api/revoke", http.HandlerFunc(apiCfg.RevokeToken))
