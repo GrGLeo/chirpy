@@ -12,9 +12,15 @@ import (
 	"github.com/GrGLeo/chirpy/internal/database"
 )
 
-type RequestBody struct {
+type CreateRequestBody struct {
   Password string `json:"password"`
   Email string `json:"email"` 
+}
+
+type LoginRequestBody struct {
+  Password string `json:"password"`
+  Email string `json:"email"` 
+  ExpiresIn int16 `json:"expires_in_seconds"`
 }
 
 type User struct {
@@ -24,10 +30,16 @@ type User struct {
   Email     string    `json:"email"`
 }
 
-func (cfg *apiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
-  
+type UserLogged struct {
+  ID        uuid.UUID `json:"id"`
+  CreatedAt time.Time `json:"created_at"`
+  UpdatedAt time.Time `json:"updated_at"`
+  Email     string    `json:"email"`
+  Token     string    `json:"token"`
+}
 
-  var reqBody RequestBody
+func (cfg *apiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
+  var reqBody CreateRequestBody
   if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
     http.Error(w, "Invalid request body", http.StatusBadRequest)
     return
@@ -69,7 +81,7 @@ func (cfg *apiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
-  var reqBody RequestBody
+  var reqBody LoginRequestBody
   if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
     http.Error(w, "Invaled request body", http.StatusBadRequest)
     return
@@ -86,11 +98,29 @@ func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
     http.Error(w, "Incorrect password", http.StatusUnauthorized)
     return
   }
-  user := User{
+
+  // Create JWT token
+  expiresIn := reqBody.ExpiresIn
+  var expires time.Duration
+  if expiresIn == 0 {
+    expires = time.Duration(1) * time.Hour
+  } else if expiresIn > 3600 {
+    expires = time.Duration(1) * time.Hour
+  } else {
+    expires = time.Duration(expiresIn) * time.Second
+  }
+  token, err := auth.MakeJWT(userInfo.ID, cfg.jwtsecret, expires)
+  if err != nil {
+    http.Error(w, "Internal server error", http.StatusInternalServerError)
+  }
+
+
+  user := UserLogged{
     ID: userInfo.ID,
     CreatedAt: userInfo.CreatedAt,
     UpdatedAt: userInfo.UpdatedAt,
     Email: userInfo.Email,
+    Token: token,
   }
   
   data, err := json.Marshal(user)
@@ -98,6 +128,7 @@ func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
     http.Error(w, "Error marshalling json", http.StatusInternalServerError)
     return
   }
+
   
   w.Header().Set("Content-Type", "application/json")
   w.WriteHeader(http.StatusOK)

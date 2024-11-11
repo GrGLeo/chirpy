@@ -72,6 +72,7 @@ func main() {
   godotenv.Load()
   dbUrl := os.Getenv("DB_URL")
   platform := os.Getenv("PLATFORM")
+  JWTSecret := os.Getenv("JWTSECRET")
   
   db, _ := sql.Open("postgres", dbUrl)
   dbQueries := database.New(db)
@@ -80,6 +81,7 @@ func main() {
   apiCfg := apiConfig{
     dbQueries: dbQueries,
     platform: platform,
+    jwtsecret: JWTSecret,
   }
 
   mux.Handle("/app", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))

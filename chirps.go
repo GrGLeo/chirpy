@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrGLeo/chirpy/internal/auth"
 	"github.com/GrGLeo/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -17,12 +18,11 @@ type Chirp struct {
   CreatedAt time.Time       `json:"created_at"`
   UpdatedAt time.Time       `json:"updated_at"`
   Body      string          `json:"body"`
-  UserId    uuid.NullUUID   `json:"user_id"`
+  UserId    uuid.UUID       `json:"user_id"`
 }
   
 type requestsBody struct {
   Body string `json:"body"`
-  UserId uuid.NullUUID `json:"user_id"`
 }
 
 func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +34,14 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(500)
     return
   }
+  token, err := auth.GetBearerToken(r.Header)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusUnauthorized)
+  }
+  userId, err := auth.ValidateJWT(token, cfg.jwtsecret)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusUnauthorized)
+  }
 
   if len(reqBody.Body) > 140 {
     http.Error(w, "Chirp is too long", 400)
@@ -44,7 +52,7 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
 
   ChirpParam := database.CreateChirpParams{
     Body: msg,
-    UserID: reqBody.UserId,
+    UserID: userId,
   }
   chirp, err := cfg.dbQueries.CreateChirp(r.Context(), ChirpParam)
   if err != nil {
@@ -57,7 +65,7 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
     CreatedAt: chirp.CreatedAt,
     UpdatedAt: chirp.UpdatedAt,
     Body: chirp.Body,
-    UserId: chirp.UserID,
+    UserId: userId,
   }
    
   respondWihJson(w, 201, returnChirp)
