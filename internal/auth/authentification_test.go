@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/hex"
 	"net/http"
 	"testing"
 	"time"
@@ -64,3 +65,16 @@ func TestGetBearerToken (t *testing.T) {
     t.Errorf("got: %q, want %q", token, "testing")
   }
 }
+
+func TestRandomData (t *testing.T) {
+  nullData := make([]byte, 32)
+  nullString := hex.EncodeToString(nullData)
+  randomData, err := MakeRefreshToken()
+  if err != nil {
+    t.Error("Error while creating random string")
+  }
+  if nullString == randomData {
+    t.Errorf("%q randomData shouldn't be equal to %q", randomData, nullString)
+  }
+}
+
