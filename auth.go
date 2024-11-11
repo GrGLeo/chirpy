@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -31,11 +32,12 @@ type User struct {
 }
 
 type UserLogged struct {
-  ID        uuid.UUID `json:"id"`
-  CreatedAt time.Time `json:"created_at"`
-  UpdatedAt time.Time `json:"updated_at"`
-  Email     string    `json:"email"`
-  Token     string    `json:"token"`
+  ID            uuid.UUID `json:"id"`
+  CreatedAt     time.Time `json:"created_at"`
+  UpdatedAt     time.Time `json:"updated_at"`
+  Email         string    `json:"email"`
+  Token         string    `json:"token"`
+  RefreshToken  string    `json:"refresh_token"`
 }
 
 func (cfg *apiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -100,20 +102,29 @@ func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
   }
 
   // Create JWT token
-  expiresIn := reqBody.ExpiresIn
-  var expires time.Duration
-  if expiresIn == 0 {
-    expires = time.Duration(1) * time.Hour
-  } else if expiresIn > 3600 {
-    expires = time.Duration(1) * time.Hour
-  } else {
-    expires = time.Duration(expiresIn) * time.Second
-  }
-  token, err := auth.MakeJWT(userInfo.ID, cfg.jwtsecret, expires)
+  token, err := auth.MakeJWT(userInfo.ID, cfg.jwtsecret)
   if err != nil {
     http.Error(w, "Internal server error", http.StatusInternalServerError)
   }
 
+  // Create RefreshToken
+  refreshtoken, err := auth.MakeRefreshToken()
+  if err != nil {
+    http.Error(w, "Internal server error", http.StatusInternalServerError)
+  }
+  
+  durationHour := 60 * 24
+  expiresAt := time.Now().Add(time.Duration(durationHour) * time.Hour)
+  refreshTokenParams := database.WriteRefreshTokenParams{
+    Token: refreshtoken,
+    UserID: userInfo.ID,
+    ExpiresAt: expiresAt,
+  }
+
+  err = cfg.dbQueries.WriteRefreshToken(r.Context(), refreshTokenParams)
+  if err != nil {
+    http.Error(w, "Internal server error", http.StatusInternalServerError)
+  }
 
   user := UserLogged{
     ID: userInfo.ID,
@@ -121,6 +132,7 @@ func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
     UpdatedAt: userInfo.UpdatedAt,
     Email: userInfo.Email,
     Token: token,
+    RefreshToken: refreshtoken,
   }
   
   data, err := json.Marshal(user)
@@ -129,8 +141,64 @@ func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  
   w.Header().Set("Content-Type", "application/json")
   w.WriteHeader(http.StatusOK)
   w.Write(data)
+}
+
+func (cfg *apiConfig) RefreshToken(w http.ResponseWriter, r *http.Request) {
+  refreshToken, err := auth.GetBearerToken(r.Header)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusUnauthorized)
+    return
+  }
+
+  refreshTokenRow, err := cfg.dbQueries.GetRefreshToken(r.Context(), refreshToken)
+  if err != nil {
+    if err == sql.ErrNoRows {
+      http.Error(w, "Token not found", http.StatusUnauthorized)
+      return
+    }
+    http.Error(w, "Internal server error", http.StatusInternalServerError)
+  }
+ // Check if token is still valid 
+ now := time.Now()
+  if now.After(refreshTokenRow.ExpiresAt) {
+    http.Error(w, "Token past valid date", http.StatusUnauthorized)
+  }
+  if refreshTokenRow.RevokedAt.Valid {
+      http.Error(w, "Token is revoked", http.StatusUnauthorized)
+      return
+  }
+  token, _:= auth.MakeJWT(refreshTokenRow.UserID, cfg.jwtsecret)
+  
+  data, err := json.Marshal(map[string]string{"token": token})
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  w.Header().Set("Content-Type", "application/json")
+  w.WriteHeader(http.StatusOK)
+  w.Write(data)
+}
+
+func (cfg *apiConfig) RevokeToken (w http.ResponseWriter, r *http.Request) {
+  refreshToken, err := auth.GetBearerToken(r.Header)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusUnauthorized)
+    return
+  }
+
+  revokeTokenParams := database.RevokeTokenParams{
+    UpdatedAt: time.Now(),
+    Token: refreshToken,
+  }
+
+  err = cfg.dbQueries.RevokeToken(r.Context(), revokeTokenParams)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  w.WriteHeader(http.StatusNoContent)
 }

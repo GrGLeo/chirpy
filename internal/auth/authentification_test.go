@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -36,8 +35,7 @@ func TestPassword (t *testing.T) {
 func TestJWT (t *testing.T) {
   t.Run("testing JWT creation", func(t *testing.T) {
     userId := uuid.New()
-    expiresIn := time.Duration(1) * time.Hour
-    token, err := MakeJWT(userId, "secret", expiresIn)
+    token, err := MakeJWT(userId, "secret")
     if err != nil {
       t.Errorf("Error while creating the token: %q", err)
       return

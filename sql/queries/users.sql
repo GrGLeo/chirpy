@@ -13,3 +13,4 @@ RETURNING id, created_at, updated_at, email;
 SELECT *
 FROM users
 WHERE email = $1;
+
