@@ -76,3 +76,15 @@ func TestRandomData (t *testing.T) {
   }
 }
 
+func TestGetApiKey (t *testing.T) {
+  header := http.Header{"Authorization": []string{"ApiKey testing"}}
+  token, err := GetApiKey(header)
+ 
+  if err != nil {
+    t.Errorf("Error with authorization: %q", err)
+  }
+
+  if token != "testing" {
+    t.Errorf("got: %q, want %q", token, "testing")
+  }
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/GrGLeo/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -15,6 +16,12 @@ type ReqBody struct {
 }
 
 func (cfg *apiConfig) VerifyPremium (w http.ResponseWriter, r *http.Request) {
+  apiKey, _ := auth.GetApiKey(r.Header)
+
+  if apiKey != cfg.apikey {
+    http.Error(w, "Not authorize", http.StatusUnauthorized)
+  }
+
   var reqBody ReqBody
   if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
     http.Error(w, "Error decoding body", http.StatusBadRequest)

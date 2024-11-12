@@ -18,6 +18,7 @@ type apiConfig struct {
   dbQueries *database.Queries 
   platform string
   jwtsecret string
+  apikey string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -73,6 +74,7 @@ func main() {
   dbUrl := os.Getenv("DB_URL")
   platform := os.Getenv("PLATFORM")
   JWTSecret := os.Getenv("JWTSECRET")
+  ApiKey := os.Getenv("POLKA_KEY")
   
   db, _ := sql.Open("postgres", dbUrl)
   dbQueries := database.New(db)
@@ -82,6 +84,7 @@ func main() {
     dbQueries: dbQueries,
     platform: platform,
     jwtsecret: JWTSecret,
+    apikey : ApiKey,
   }
 
   mux.Handle("/app", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
