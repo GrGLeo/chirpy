@@ -74,13 +74,29 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
   var AllChirps []Chirp
+  var err error
+
+
+  authorID := uuid.Nil
+  userId := r.URL.Query().Get("author_id")
+  if userId != "" {
+    authorID, err = uuid.Parse(userId)
+    if err != nil {
+      http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+      return
+    }
+  }
   
   Chirps, err := cfg.dbQueries.GetChirps(r.Context())
   if err != nil {
     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
     return
   }
+
   for _, result := range Chirps {
+    if authorID != uuid.Nil && result.UserID != authorID {
+      continue
+    }
     AllChirps = append(
       AllChirps,
       Chirp{
