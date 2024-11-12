@@ -75,6 +75,7 @@ func (cfg *apiConfig) WriteChirps(w http.ResponseWriter, r *http.Request) {
 func (cfg *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
   var AllChirps []Chirp
   var err error
+  var Chirps []database.Chirp
 
 
   authorID := uuid.Nil
@@ -86,8 +87,17 @@ func (cfg *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
       return
     }
   }
+
   
-  Chirps, err := cfg.dbQueries.GetChirps(r.Context())
+  orderBy := r.URL.Query().Get("sort")
+  if orderBy == "asc" {
+    Chirps, err = cfg.dbQueries.GetChirpsAsc(r.Context())
+  } else if orderBy == "desc" {
+    Chirps, err = cfg.dbQueries.GetChirpsDesc(r.Context())
+  } else {
+    Chirps, err = cfg.dbQueries.GetChirpsAsc(r.Context())
+  }
+
   if err != nil {
     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
     return
