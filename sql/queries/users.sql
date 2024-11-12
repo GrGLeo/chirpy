@@ -25,7 +25,8 @@ SELECT is_chirpy_red
 FROM users
 WHERE id = $1;
 
--- name: UpgradeUser :exec
+-- name: UpgradeUser :one
 UPDATE users
 SET is_chirpy_red = true
-WHERE id = $1;
+WHERE id = $1
+RETURNING 1;

@@ -29,6 +29,7 @@ type User struct {
   CreatedAt time.Time `json:"created_at"`
   UpdatedAt time.Time `json:"updated_at"`
   Email     string    `json:"email"`
+  IsChirpRed bool     `json:"is_chirpy_red"`
 }
 
 type UserLogged struct {
@@ -38,6 +39,7 @@ type UserLogged struct {
   Email         string    `json:"email"`
   Token         string    `json:"token"`
   RefreshToken  string    `json:"refresh_token"`
+  IsChirpRed    bool      `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +65,7 @@ func (cfg *apiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
     CreatedAt: newUser.CreatedAt,
     UpdatedAt: newUser.UpdatedAt,
     Email: newUser.Email,
+    IsChirpRed: false,
   }
   
   if err != nil {
@@ -133,6 +136,7 @@ func (cfg *apiConfig) UserLogin(w http.ResponseWriter, r *http.Request) {
     Email: userInfo.Email,
     Token: token,
     RefreshToken: refreshtoken,
+    IsChirpRed: userInfo.IsChirpyRed,
   }
   
   data, err := json.Marshal(user)
@@ -162,7 +166,7 @@ func (cfg *apiConfig) RefreshToken(w http.ResponseWriter, r *http.Request) {
     http.Error(w, "Internal server error", http.StatusInternalServerError)
   }
  // Check if token is still valid 
- now := time.Now()
+  now := time.Now()
   if now.After(refreshTokenRow.ExpiresAt) {
     http.Error(w, "Token past valid date", http.StatusUnauthorized)
   }

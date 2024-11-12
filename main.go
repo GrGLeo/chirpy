@@ -98,6 +98,7 @@ func main() {
   mux.Handle("GET /api/chirps", http.HandlerFunc(apiCfg.GetChirps))
   mux.Handle("GET /api/chirps/{id}", http.HandlerFunc(apiCfg.GetChirp))
   mux.Handle("DELETE /api/chirps/{id}", http.HandlerFunc(apiCfg.DeleteChirp))
+  mux.Handle("POST /api/polka/webhooks", http.HandlerFunc(apiCfg.VerifyPremium))
 
   server := &http.Server {
     Addr: ":8080",
